@@ -4,20 +4,24 @@ const cloudinary = require("cloudinary").v2;
 const mongoose = require("mongoose");
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 const QRCode = require('qrcode');
-const generateUpiQrcode = async (req,res)=>{
+const generateUpiQrcode = async (req, res) => {
   const { upiId, name, amount } = req.body;
-    if (!upiId || !name || !amount) {
-        return res.status(400).json({ error: 'UPI ID, Name, and Amount are required' });
-    }
-    const upiString = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}`;
-    try {
-        const qrCodeData = await QRCode.toDataURL(upiString);
-        res.status(200).json({ qrCode: qrCodeData });
-    } catch (err) {
-        console.error('Error generating QR code:', err);
-        res.status(500).json({ error: 'Failed to generate QR code' });
-    }
-}
+  if (!upiId || !name || !amount) {
+      return res.status(400).json({ error: 'UPI ID, Name, and Amount are required' });
+  }
+
+  // Creating a UPI string
+  const upiString = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(name)}&am=${encodeURIComponent(amount)}&tr=${encodeURIComponent(Date.now().toString())}&cu=INR`;
+
+  try {
+      const qrCodeData = await QRCode.toDataURL(upiString);
+      res.status(200).json({ qrCode: qrCodeData, upiLink: upiString });
+  } catch (err) {
+      console.error('Error generating QR code:', err);
+      res.status(500).json({ error: 'Failed to generate QR code' });
+  }
+};
+
 const paymentType = async (req,res)=>{
     try{
         const { error } = paymentSchema.validate(req.body);
